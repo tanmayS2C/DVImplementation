@@ -21,39 +21,9 @@ if __name__ == "__main__":
     for survey in survey_documents:
         for derived_variable in derivedvariables_collection.find({"updatedAt": {"$gt": last_30_minutes}, "surveyId": survey["uuid"]}):
             if derived_variable["type"] == "bucket":
-                survey_responses = surveys_collection.find({"surveyId": survey["uuid"]})
+                survey_responses = responses_collection.find({"surveyId": survey["uuid"]})
                 bucketing.handle_bucketing(derived_variable, survey_responses)
             elif derived_variable["type"] == "formula":
                 print("formula")
             elif derived_variable["type"] == "logical":
                 print("logical")
-
-
-    # for survey in survey_documents:
-    #     print(survey)
-
-    # survey = surveys.find_one({ "title":"All_questions" })
-    # survey_uuid = survey["uuid"]
-
-
-    # dv = derivedvariables_collection.find_one({"surveyId": survey_uuid})
-
-    # if dv["type"] == "bucket":
-    #     bucketing.handle_bucketing()
-
-    # # survey_id
-    # survey_id = dv["surveyId"]
-
-
-
-    
-    # # bucket_logic_name
-    # bucketing_logic_name = dv["name"]
-
-    # # bucketing_logic 
-    # bucketing_logic = dv["bucketingLogic"]
-    # edata_or_ques = bucketing_logic["fieldType"] 
-    # ques_id = bucketing_logic["fieldId"]["id"]
-
-    # if edata_or_ques == "ques":
-    #     print(ques_id)
