@@ -1,4 +1,15 @@
-def handle_single_logic_close_ended(single_condition, answers):
+operator_dict = {
+    "eq":  " == ",
+    "neq": " != ",
+    "lt": " < ",
+    "lte": " <= ",
+    "gt": " > ",
+    "gte": " >= ",
+    "con": " in "
+}
+
+def handle_single_logic_close_ended(single_condition, single_response):
+    answers = single_response["answers"]
     left_operand = single_condition["data"]["leftOperand"]
     right_operand_arr = single_condition["data"]["rightOperand"]
     operator = single_condition["data"]['operator']
@@ -24,21 +35,38 @@ def handle_single_logic_close_ended(single_condition, answers):
     if operator == "eq": return left_value in right_arr
     else: return left_value not in right_arr
 
-
-def handle_single_logic_open_ended(single_condition, answers):
-    
-    
+def handle_single_logic_open_ended(single_condition, single_response):
     pass
 
-def handle_logic_block(inner_condition, answers, questions_collection):
+def handle_edata(single_condition, single_response):
+    edata_dv_name = single_condition["data"]["leftOperand"]["id"]
+    
+    edata_field_arr = single_response["embedDataArr"]
+    edata_dict = single_response["embedData"]
+
+    if edata_dv_name in edata_field_arr:
+        res_edata_val = edata_dict[edata_dv_name]
+        edata_dv_value = single_condition["data"]["rightOperand"][0]["itemId"]
+        operator = operator_dict[single_condition["data"]["operator"]]
+
+        # if str isnumeric than converted to int to delete precedding 0
+        res_edata_val = str(int(res_edata_val)) if res_edata_val.isnumeric() else f" '{res_edata_val}' "
+        edata_dv_value = str(int(edata_dv_value)) if edata_dv_value.isnumeric() else f" '{edata_dv_value}' "
+
+        return eval( f" {res_edata_val} {operator} {edata_dv_value} ")
+
+def handle_logic_block(inner_condition, single_response, questions_collection):
     block_result = ""
     for single_condition in inner_condition:
-        openended = True if "itemId" in single_condition["data"]["rightOperand"][0] else False
+        is_openended = True if "itemId" in single_condition["data"]["rightOperand"][0] else False
+        is_edata = True if single_condition["data"]["fieldType"] == "edata" else None
 
-        if openended:
-            block_result += f" {handle_single_logic_open_ended(single_condition, answers)} "
+        if is_edata:
+            block_result += f" {handle_edata(single_condition, single_response)} "
+        elif is_openended:
+            block_result += f" {handle_single_logic_open_ended(single_condition, single_response)} "
         else:
-            block_result += f" {handle_single_logic_close_ended(single_condition, answers)} "
+            block_result += f" {handle_single_logic_close_ended(single_condition, single_response)} "
 
         block_result += " " + single_condition["operator"] + " "
 
@@ -51,16 +79,16 @@ def handle_logical(derived_variable, survey_responses, questions_collection):
     # Logical logic
     logical_logic = derived_variable["logicalLogic"]
 
-    for survey in survey_responses:
-        answers = survey["answers"]
+    for single_response in survey_responses:
+        # answers = survey["answers"]
         
         # else condition set to result 
         result = logical_logic[-1]["logicName"]
 
         for outer_condition in logical_logic[:-1]:
             inner_condition = outer_condition["condition"]
-            if handle_logic_block(inner_condition, answers, questions_collection):
+            if handle_logic_block(inner_condition, single_response, questions_collection):
                 result = outer_condition["logicName"]
                 break
         
-        print(result)
+        # print(result)
