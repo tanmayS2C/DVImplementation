@@ -36,6 +36,7 @@ def handle_single_logic_close_ended(single_condition, single_response):
     else: return left_value not in right_arr
 
 def handle_single_logic_open_ended(single_condition, single_response):
+    
     pass
 
 def handle_edata(single_condition, single_response):
