@@ -5,7 +5,8 @@ operator_dict = {
     "lte": " <= ",
     "gt": " > ",
     "gte": " >= ",
-    "con": " in "
+    "con": " in ",
+    "ans": "ans"
 }
 
 def handle_single_logic_close_ended(single_condition, single_response):
@@ -17,16 +18,21 @@ def handle_single_logic_close_ended(single_condition, single_response):
     left_value = None
     right_arr = []
 
+    if "answers" in single_response and left_operand["id"] in single_response["answers"]:
+        answer_array = single_response["answers"][left_operand["id"]]
+    else:
+        print(False)
+        return
 
     if 'colId' in right_operand_arr[0]:
-        for answer in answers[left_operand["id"]]:
+        for answer in answer_array:
             if answer["rowId"] == left_operand["rowId"]:
                 left_value = answer["colId"]
                 break
 
         right_arr = [ right_operand["colId"] for right_operand in right_operand_arr ]
     else:
-        for answer in answers[left_operand["id"]]:
+        for answer in answer_array:
                 left_value = answer["rowId"]
                 break
 
@@ -36,8 +42,48 @@ def handle_single_logic_close_ended(single_condition, single_response):
     else: return left_value not in right_arr
 
 def handle_single_logic_open_ended(single_condition, single_response):
-    
-    pass
+    right_operand = single_condition["data"]["rightOperand"][0]["itemId"]
+    operator = operator_dict[single_condition["data"]['operator']]
+    left_operand = single_condition["data"]["leftOperand"]
+
+    if "answers" in single_response and left_operand["id"] in single_response["answers"]:
+        answer_array = single_response["answers"][left_operand["id"]]
+    else:
+        print(False)
+        return
+
+    for answer in answer_array:
+        if "rowId" not in left_operand:
+            if operator == "ans":
+                print(True)
+                return
+            else:
+                left_operand = answer["text"]
+                break
+
+        elif left_operand["rowId"] == answer["rowId"]:
+            if "colId" in left_operand and left_operand["colId"] == answer["colId"]:
+                if operator == "ans":
+                    print(True)
+                    return
+                else:
+                    left_operand = answer["text"]
+                    break
+            elif "colId" not in left_operand:
+                if operator == "ans":
+                    print(True)
+                    return
+                else:
+                    left_operand = answer["text"]
+                    break
+
+    left_operand = str(int(left_operand)) if (left_operand.isnumeric() and operator != " in ") else f" '{left_operand}' "
+    right_operand = str(int(right_operand)) if (right_operand.isnumeric() and operator != " in ") else f" '{right_operand}' "
+
+    if operator == " in ":
+        print((f" {right_operand} {operator} {left_operand} "))
+    else:
+        print((f" {left_operand} {operator} {right_operand} "))
 
 def handle_edata(single_condition, single_response):
     edata_dv_name = single_condition["data"]["leftOperand"]["id"]
