@@ -20,8 +20,8 @@ if __name__ == "__main__":
     for derived_variable in derivedvariables_collection.find({"updatedAt": {"$gt": last_30_minutes}}):
         survey_responses = responses_collection.find({"surveyId": derived_variable["surveyId"]})
         if derived_variable["type"] == "bucket":
-            bucketing.handle_bucketing(derived_variable, survey_responses)
+            bucketing.handle_bucketing(derived_variable, survey_responses, responses_collection)
         elif derived_variable["type"] == "formula":
             print("formula")
         elif derived_variable["type"] == "logical":
-            logical.handle_logical(derived_variable, survey_responses, questions_collection)
+            logical.handle_logical(derived_variable, survey_responses, responses_collection)

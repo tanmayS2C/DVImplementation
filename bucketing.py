@@ -28,7 +28,6 @@ def handle_bucketing(derived_variable, survey_responses):
                 help_dict[bucket["rowId"]] = bucket_name
 
     for response in survey_responses:
-        print("derivedVarArr" in response.keys())
 
         if edata_or_ques == "edata" and response["embedDataArr"]:
             for e_data in response["embedDataArr"]:

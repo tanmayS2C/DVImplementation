@@ -10,7 +10,6 @@ operator_dict = {
 }
 
 def handle_single_logic_close_ended(single_condition, single_response):
-    answers = single_response["answers"]
     left_operand = single_condition["data"]["leftOperand"]
     right_operand_arr = single_condition["data"]["rightOperand"]
     operator = single_condition["data"]['operator']
@@ -21,8 +20,8 @@ def handle_single_logic_close_ended(single_condition, single_response):
     if "answers" in single_response and left_operand["id"] in single_response["answers"]:
         answer_array = single_response["answers"][left_operand["id"]]
     else:
-        print(False)
-        return
+        return False
+        
 
     if 'colId' in right_operand_arr[0]:
         for answer in answer_array:
@@ -49,14 +48,13 @@ def handle_single_logic_open_ended(single_condition, single_response):
     if "answers" in single_response and left_operand["id"] in single_response["answers"]:
         answer_array = single_response["answers"][left_operand["id"]]
     else:
-        print(False)
-        return
+        return False
+        
 
     for answer in answer_array:
         if "rowId" not in left_operand:
             if operator == "ans":
-                print(True)
-                return
+                return True
             else:
                 left_operand = answer["text"]
                 break
@@ -64,15 +62,14 @@ def handle_single_logic_open_ended(single_condition, single_response):
         elif left_operand["rowId"] == answer["rowId"]:
             if "colId" in left_operand and left_operand["colId"] == answer["colId"]:
                 if operator == "ans":
-                    print(True)
-                    return
+                    return True
+                    
                 else:
                     left_operand = answer["text"]
                     break
             elif "colId" not in left_operand:
                 if operator == "ans":
-                    print(True)
-                    return
+                    return True
                 else:
                     left_operand = answer["text"]
                     break
@@ -81,9 +78,9 @@ def handle_single_logic_open_ended(single_condition, single_response):
     right_operand = str(int(right_operand)) if (right_operand.isnumeric() and operator != " in ") else f" '{right_operand}' "
 
     if operator == " in ":
-        print((f" {right_operand} {operator} {left_operand} "))
+        return eval(f" {right_operand} {operator} {left_operand} ")
     else:
-        print((f" {left_operand} {operator} {right_operand} "))
+        return eval(f" {left_operand} {operator} {right_operand} ")
 
 def handle_edata(single_condition, single_response):
     edata_dv_name = single_condition["data"]["leftOperand"]["id"]
@@ -102,7 +99,7 @@ def handle_edata(single_condition, single_response):
 
         return eval( f" {res_edata_val} {operator} {edata_dv_value} ")
 
-def handle_logic_block(inner_condition, single_response, questions_collection):
+def handle_logic_block(inner_condition, single_response):
     block_result = ""
     for single_condition in inner_condition:
         is_openended = True if "itemId" in single_condition["data"]["rightOperand"][0] else False
@@ -122,20 +119,24 @@ def handle_logic_block(inner_condition, single_response, questions_collection):
 
     return eval(block_result)
 
-def handle_logical(derived_variable, survey_responses, questions_collection):
-    # Logical logic
+def handle_logical(derived_variable, survey_responses, response_collection):
     logical_logic = derived_variable["logicalLogic"]
 
     for single_response in survey_responses:
-        # answers = survey["answers"]
-        
         # else condition set to result 
         result = logical_logic[-1]["logicName"]
 
         for outer_condition in logical_logic[:-1]:
             inner_condition = outer_condition["condition"]
-            if handle_logic_block(inner_condition, single_response, questions_collection):
+            if handle_logic_block(inner_condition, single_response):
                 result = outer_condition["logicName"]
                 break
         
-        # print(result)
+        derivedVarArr = single_response["derivedVarArr"]
+        derivedVarArr.append(derived_variable["name"])
+        
+        derivedVar = single_response["derivedVar"] if "derivedVar" in single_response else {}
+        derivedVar[str(derived_variable["name"])] = result
+        
+        filter = {"uuid": single_response["uuid"]}
+        response_collection.update_one(filter, {"$set": {"derivedVarArr": derivedVarArr, "derivedVar": derivedVar}})
